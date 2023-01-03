@@ -2,8 +2,9 @@ const Event = require('../../misc/database/event');
 
 module.exports = async function (req, res, next) {
     try {
-        // Get the event from the database
-        const event = await Event.findById(req.params.id);
+        // Get the event from the database 
+        // and populate with entrance types
+        const event = await Event.findById(req.params.id).populate('entranceTypes');
 
         // Make sure the event exists
         if (!event) {
@@ -13,9 +14,9 @@ module.exports = async function (req, res, next) {
             })
         }
 
-        // Send a response
+        // Return the event
         res.status(200).json({
-            message: 'Event found',
+            message: `Event found`,
             success: true,
             event: event
         });
