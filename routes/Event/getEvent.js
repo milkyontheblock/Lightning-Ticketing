@@ -4,7 +4,11 @@ module.exports = async function (req, res, next) {
     try {
         // Get the event from the database 
         // and populate with entrance types
-        const event = await Event.findById(req.params.id).populate('entranceTypes');
+        // but remove the entrance types' event property
+        const event = await Event.findById(req.params.id).populate({
+            path: 'entranceTypes',
+            select: '-event'
+        });
 
         // Make sure the event exists
         if (!event) {
