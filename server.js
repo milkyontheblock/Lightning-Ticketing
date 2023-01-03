@@ -13,6 +13,7 @@ mongoose.connect(process.env.MONGO_URI, {
     useUnifiedTopology: true
 });
 
+// Check if connected to MongoDB
 const db = mongoose.connection;
 db.on('error', (error) => console.error(error));
 db.once('open', () => console.log('Connected to MongoDB'));

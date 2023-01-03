@@ -2,6 +2,16 @@ const mongoose = require('mongoose');
 
 // User schema with email and password but personal information is not required
 const userSchema = new mongoose.Schema({
+    role: {
+        type: String,
+        enum: ['customer', 'vendor', 'admin'],
+        default: 'user'
+    },
+    status: {
+        type: String,
+        enum: ['active'],
+        default: 'active'
+    },
     email: {
         type: String,
         minlength: 3,
