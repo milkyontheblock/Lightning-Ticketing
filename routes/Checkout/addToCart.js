@@ -36,9 +36,10 @@ module.exports = async function (req, res, next) {
             return res.status(400).json({ message: 'Entrance type is sold out', success: false });
         }
 
-        // Find tickets that are reserved but not claimed within 8 minutes
+        // Find tickets that are reserved but not claimed within the reserve duration
+        const reserveDuration = config.cart.session.maxDuration
         const unclaimedTickets = mintedTickets.filter(ticket => {
-            return ticket.status === 'reserved' && ticket.createdOn.getTime() + 8 * 60 * 1000 > new Date().getTime()
+            return ticket.status === 'reserved' && ticket.createdOn.getTime() + reserveDuration > new Date().getTime()
         });
 
         // Remove those tickets from the database
@@ -56,7 +57,6 @@ module.exports = async function (req, res, next) {
             tickets.push(new Ticket({
                 event: entranceType.event._id,
                 entranceType: entranceType._id,
-                personalInformation: addToCartMetaData.personalInformation,
             }));
         }
 
