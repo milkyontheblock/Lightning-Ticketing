@@ -37,15 +37,16 @@ module.exports = async function (req, res, next) {
         }
 
         // Find tickets that are reserved but not claimed within 8 minutes
-        const reservedTickets = mintedTickets.filter(ticket => {
+        const unclaimedTickets = mintedTickets.filter(ticket => {
             return ticket.status === 'reserved' && ticket.createdOn.getTime() + 8 * 60 * 1000 > new Date().getTime()
         });
 
         // Remove those tickets from the database
-        await Ticket.deleteMany({ _id: { $in: reservedTickets.map(ticket => ticket._id) } });
+        await Ticket.deleteMany({ _id: { $in: unclaimedTickets.map(ticket => ticket._id) } });
 
         // Check if there are enough tickets left
-        if (maxCapacity - mintedTickets.length + reservedTickets.length < addToCartMetaData.quantity) {
+        const ticketsLeft = maxCapacity - mintedTickets.length + unclaimedTickets.length;
+        if (ticketsLeft < addToCartMetaData.quantity) {
             return res.status(400).json({ message: 'Not enough tickets left', success: false });
         }
 
