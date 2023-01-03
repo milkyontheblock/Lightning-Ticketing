@@ -5,22 +5,9 @@ const config = require('../../config.json')
 
 module.exports = async function (req, res, next) {
     try {
-        // Add-to-cart metadata
-        const addToCartMetaData = req.body;
-
-        // Initialize cart
-        // - If cartId is provided, get cart from database
-        // - If cartId is not provided, create new cart
-        const cart = req.body.cartId
-            ? await Cart.findById(req.body.cartId)
-            : new Cart({
-                createdOn: new Date(),
-                tickets: []
-            });
-
-        // Make sure 'cart' exists (after initialization)
-        if (!cart) {
-            return res.status(404).json({ message: 'Cart not found', success: false });
+        // Check if cart exists on the request body
+        if (!req.cart) {
+            return res.status(400).json({ message: 'Cart not initialized', success: false });
         }
 
         // Get entrance type
