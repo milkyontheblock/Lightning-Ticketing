@@ -17,40 +17,42 @@ const userSchema = new mongoose.Schema({
         minlength: 3,
         maxlength: 100,
         match: /^\S*$/,
-        required: true,
-        unique: true
+        required: [true, 'Email is required'],
+        unique: [true, 'Email already exists']
     },
     password: {
         type: String,
         minlength: 8,
         maxlength: 100,
         match: /^\S*$/,
-        required: true
+        required: [true, 'Password is required']
     },
     firstName: {
         type: String,
         minlength: 1,
         maxlength: 100,
         match: /^\S*$/,
-        required: true,
+        required: [true, 'First name is required'],
     },
     lastName: {
         type: String,
         minlength: 1,
         maxlength: 100,
         match: /^\S*$/,
-        required: true,
+        required: [true, 'Last name is required'],
     },
     zipCode: {
         type: String,
-        required: false,
         default: null
     },
     houseNumber: {
         type: String,
-        required: false,
         default: null
     },
+    createdOn: {
+        type: Date,
+        default: Date.now
+    }
 });
 
 module.exports = mongoose.model('User', userSchema);

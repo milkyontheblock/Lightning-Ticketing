@@ -11,6 +11,7 @@ const shopSchema = new mongoose.Schema({
     creator: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
+        required: true,
     },
     createdOn: {
         type: Date,
@@ -30,6 +31,10 @@ const shopSchema = new mongoose.Schema({
         match: /^\S*$/,
         required: false,
     },
+    events: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Event',
+    }],
 });
 
 module.exports = mongoose.model('Shop', shopSchema);
