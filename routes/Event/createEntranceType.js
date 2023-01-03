@@ -34,6 +34,12 @@ module.exports = async function (req, res, next) {
         // Store the entrance type in the database
         await entranceType.save();
 
+        // Add the entrance type to the event
+        event.entranceTypes.push(entranceType._id);
+
+        // Store the event in the database
+        await event.save();
+
         // Return the entrance type
         res.status(200).json({
             message: `Entrance type created for ${event.title}`,
