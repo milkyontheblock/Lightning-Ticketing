@@ -28,8 +28,11 @@ const eventSchema = new mongoose.Schema({
         type: String,
         minlength: 1,
         maxlength: 100,
-        match: /^\S*$/,
-        default: 'unknown',
+        default: null,
+    },
+    maxCapacity: {
+        type: Number,
+        default: null,
     },
     creator: {
         type: mongoose.Schema.Types.ObjectId,

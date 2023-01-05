@@ -18,15 +18,19 @@ const db = mongoose.connection;
 db.on('error', (error) => console.log(error));
 db.once('open', () => console.log('Connected to MongoDB'));
 
+// Import Middleware
+const auth = require('./misc/middleware/Auth');
+
 // Import Routes
 app.post('/auth/v1/login', require('./routes/Auth/login'));
 app.post('/auth/v1/register', require('./routes/Auth/register'));
-app.post('/shop/v1/create', require('./misc/middleware/Auth'), require('./routes/Shop/createShop'));
+app.post('/shop/v1/create', auth, require('./routes/Shop/createShop'));
 app.get('/shop/v1/:id', require('./routes/Shop/getShop'));
-app.get('/shops/v1', require('./misc/middleware/Auth'), require('./routes/Shop/getShops'));
-app.patch('/shop/v1/:id', require('./misc/middleware/Auth'), require('./routes/Shop/updateShop'));
-app.delete('/shop/v1/:id', require('./misc/middleware/Auth'), require('./routes/Shop/deleteShop'));
-app.post('/event/v1/create', require('./misc/middleware/Auth'), require('./routes/Event/createEvent'));
+app.get('/shops/v1', auth, require('./routes/Shop/getShops'));
+app.patch('/shop/v1/:id', auth, require('./routes/Shop/updateShop'));
+app.delete('/shop/v1/:id', auth, require('./routes/Shop/deleteShop'));
+app.post('/event/v1/create', auth, require('./routes/Event/createEvent'));
+app.get('/event/v1/:id', auth, require('./routes/Event/getEvent'));
 
 // Routes
 app.listen(port, () => {

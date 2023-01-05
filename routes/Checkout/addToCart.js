@@ -51,13 +51,13 @@ module.exports = async function (req, res, next) {
         await Ticket.insertMany(tickets);
 
         // Add tickets to cart
-        cart.tickets.push(...tickets.map(ticket => ticket._id));
+        req.cart.tickets.push(...tickets.map(ticket => ticket._id));
 
         // Save cart to database
-        await cart.save();
+        await req.cart.save();
 
         // Return cart
-        res.status(200).json({ cart, success: true });
+        res.status(200).json({ cart: req.cart, success: true });
     } catch(err) {
         res.status(500).json({ message: err.message, success: false });
     }

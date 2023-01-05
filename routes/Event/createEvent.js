@@ -13,12 +13,22 @@ module.exports = async function (req, res, next) {
         // Get the event data from the request body
         const eventData = req.body;
 
+        // Check if the chosen title is already taken by the vendor
+        const existingEvent = await Event.findOne({ title: eventData.title, creator: req.user._id });
+        if (existingEvent) {
+            return res.status(400).json({
+                message: 'To prevent confusion, you can\'t have two events with the same title',
+                success: false
+            });
+        }
+
         // Create a new event object
         const event = new Event({
             title: eventData.title,
             description: eventData.description,
             location: eventData.location,
             startDate: eventData.startDate,
+            maxCapacity: eventData.maxCapacity,
             creator: req.user._id,
             entranceTypes: eventData.entranceTypes
         });
@@ -28,7 +38,7 @@ module.exports = async function (req, res, next) {
 
         // Send a response
         res.status(201).json({
-            message: 'Event created',
+            message: `Event ${event.title} created`,
             success: true
         });
     } catch(err) {
