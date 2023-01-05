@@ -15,8 +15,12 @@ mongoose.connect(process.env.MONGO_URI, {
 
 // Check if connected to MongoDB
 const db = mongoose.connection;
-db.on('error', (error) => console.error(error));
+db.on('error', (error) => console.log(error));
 db.once('open', () => console.log('Connected to MongoDB'));
+
+// Import Routes
+app.post('/auth/v1/login', require('./routes/Auth/login'));
+app.post('/auth/v1/register', require('./routes/Auth/register'));
 
 // Routes
 app.listen(port, () => {

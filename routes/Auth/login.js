@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const User = require('../misc/database/user');
+const User = require('../../misc/database/user')
 const fs = require('fs');
 const path = require('path');
 
@@ -37,7 +37,7 @@ module.exports = async function (req, res, next) {
         }
 
         // Get private key from file
-        const privateKey = fs.readFileSync(path.join(__dirname, '../misc/private.pem'), 'utf8');
+        const privateKey = fs.readFileSync(path.join(__dirname, '../../misc/certificate/private.pem'), 'utf8');
 
         // Create a token for user using private key
         const token = jwt.sign({ id: user._id }, privateKey, { algorithm: 'RS256' });

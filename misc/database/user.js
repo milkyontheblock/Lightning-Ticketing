@@ -31,14 +31,12 @@ const userSchema = new mongoose.Schema({
         type: String,
         minlength: 1,
         maxlength: 100,
-        match: /^\S*$/,
         required: [true, 'First name is required'],
     },
     lastName: {
         type: String,
         minlength: 1,
         maxlength: 100,
-        match: /^\S*$/,
         required: [true, 'Last name is required'],
     },
     zipCode: {

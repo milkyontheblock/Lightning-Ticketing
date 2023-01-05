@@ -1,4 +1,4 @@
-const User = require('../misc/database/user');
+const User = require('../../misc/database/user')
 const bcrypt = require('bcrypt');
 
 module.exports = async function (req, res, next) {
@@ -24,9 +24,9 @@ module.exports = async function (req, res, next) {
             status: 'active',
             email: emailAddress,
             password: hashedPassword,
-            firstName: req.body.firstName,
-            lastName: req.body.lastName,
-            zipCode: req.body.zipCode,
+            firstName: req.body.firstname,
+            lastName: req.body.lastname,
+            zipCode: req.body.zipcode,
             houseNumber: req.body.houseNumber
         });
 
