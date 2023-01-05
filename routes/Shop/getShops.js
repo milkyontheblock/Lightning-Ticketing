@@ -11,11 +11,13 @@ module.exports = async function (req, res, next) {
         }
 
         // Get the shops from the database that belong to the vendor
-        const shops = await Shop.find({ creator: req.user._id });
+        const shops = await Shop.find({ creator: req.user._id })
+            .select(['-creator', '-__v', '-_id'])
+            .populate('events')
 
         // Send a response
         res.status(200).json({
-            message: 'Shops retrieved',
+            message: 'Retrieved shops you own',
             success: true,
             shops: shops
         });

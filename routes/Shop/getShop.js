@@ -11,11 +11,11 @@ module.exports = async function (req, res, next) {
         // the events to the result and populate the events 
         // with entrance types
         const shop = await Shop.findById(shopId)
-            .select(['-creator', '-_id', '-createdOn', '-__v'])
+            .select(['-_id', '-createdOn', '-__v'])
             .populate({ 
                 path: 'events', 
                 populate: { path: 'entranceTypes' } 
-            });
+            })
 
         // Make sure the shop exists
         if (!shop) {
