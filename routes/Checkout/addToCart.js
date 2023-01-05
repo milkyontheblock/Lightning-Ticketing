@@ -10,6 +10,9 @@ module.exports = async function (req, res, next) {
             return res.status(400).json({ message: 'Cart not initialized', success: false });
         }
 
+        // Get the metadata from the request body
+        const addToCartMetaData = req.body;
+
         // Get entrance type
         const entranceType = await EntranceType.findById(addToCartMetaData.entranceTypeId).populate('event')
         if (!entranceType) {
@@ -48,7 +51,8 @@ module.exports = async function (req, res, next) {
         }
 
         // Save tickets to database
-        await Ticket.insertMany(tickets);
+        const createTickets = await Ticket.insertMany(tickets);
+        console.log(createTickets)
 
         // Add tickets to cart
         req.cart.tickets.push(...tickets.map(ticket => ticket._id));

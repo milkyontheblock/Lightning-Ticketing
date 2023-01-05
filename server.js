@@ -20,6 +20,7 @@ db.once('open', () => console.log('Connected to MongoDB'));
 
 // Import Middleware
 const auth = require('./misc/middleware/Auth');
+const cart = require('./misc/middleware/Cart');
 
 // Import Routes
 app.post('/auth/v1/login', require('./routes/Auth/login'));
@@ -41,6 +42,7 @@ app.patch('/event/v1/:eventId/type/:entranceTypeId', auth, require('./routes/Eve
 app.delete('/event/v1/:eventId/type/:entranceTypeId', auth, require('./routes/Event/deleteEntranceType'));
 app.post('/shop/v1/:shopId/event/:eventId', auth, require('./routes/Shop/addToShop'));
 app.delete('/shop/v1/:shopId/event/:eventId', auth, require('./routes/Shop/removeFromShop'));
+app.post('/cart/v1', cart, require('./routes/Checkout/addToCart'));
 
 // Routes
 app.listen(port, () => {
