@@ -1,11 +1,16 @@
 const Shop = require('../../misc/database/shop');
+const Event = require('../../misc/database/event');
+const EntranceType = require('../../misc/database/entranceType');
 
 module.exports = async function (req, res, next) {
     try {
+        // Get shop ID from the request parameters
+        const shopId = req.params.id;
+
         // Find the shop in the database but join 
         // the events to the result and populate the events 
         // with entrance types
-        const shop = await Shop.findById(req.params.id)
+        const shop = await Shop.findById(shopId)
             .populate({ 
                 path: 'events', 
                 populate: { path: 'entranceTypes' } 
@@ -26,6 +31,7 @@ module.exports = async function (req, res, next) {
             shop: shop
         });
     } catch(err) {
+        console.log(err.stack)
         res.status(500).json({ 
             succes: false,  
             message: err.message 

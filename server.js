@@ -22,6 +22,7 @@ db.once('open', () => console.log('Connected to MongoDB'));
 app.post('/auth/v1/login', require('./routes/Auth/login'));
 app.post('/auth/v1/register', require('./routes/Auth/register'));
 app.post('/shop/v1/create', require('./misc/middleware/Auth'), require('./routes/Shop/createShop'));
+app.get('/shop/v1/:id', require('./misc/middleware/Auth'), require('./routes/Shop/getShop'));
 
 // Routes
 app.listen(port, () => {

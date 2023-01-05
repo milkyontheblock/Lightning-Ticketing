@@ -6,7 +6,10 @@ const path = require('path');
 module.exports = async function (req, res, next) {
     try {
         // Get token from request header
-        const token = req.header('Authorization').replace('Bearer ', '');
+        const token = req.header('Authorization')?.replace('Bearer ', '');
+        if (!token) {
+            throw new Error('No token provided');
+        }
 
         // Get public key from file
         const publicKey = fs.readFileSync(path.join(__dirname, '../../misc/certificate/public.pem'), 'utf8');
