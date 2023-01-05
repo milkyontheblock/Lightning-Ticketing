@@ -31,6 +31,9 @@ app.patch('/shop/v1/:id', auth, require('./routes/Shop/updateShop'));
 app.delete('/shop/v1/:id', auth, require('./routes/Shop/deleteShop'));
 app.post('/event/v1/create', auth, require('./routes/Event/createEvent'));
 app.get('/event/v1/:id', require('./routes/Event/getEvent'));
+app.patch('/event/v1/:id', auth, require('./routes/Event/updateEvent'));
+app.delete('/event/v1/:id', auth, require('./routes/Event/deleteEvent'));
+app.get('/events/v1', auth, require('./routes/Event/getEvents'));
 
 // Routes
 app.listen(port, () => {

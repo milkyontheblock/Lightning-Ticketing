@@ -8,7 +8,10 @@ module.exports = async function (req, res, next) {
         // Get token from request header
         const token = req.header('Authorization')?.replace('Bearer ', '');
         if (!token) {
-            throw new Error('No token provided');
+            return res.status(401).json({
+                message: 'Action requires authentication',
+                success: false,
+            });
         }
 
         // Get public key from file
