@@ -22,7 +22,7 @@ module.exports = async function (req, res, next) {
         }
 
         // Make sure the shop belongs to the vendor
-        if (shop.vendor.toString() !== req.user._id.toString()) {
+        if (shop.creator.toString() !== req.user._id.toString()) {
             return res.status(401).json({
                 message: 'You are not allowed to delete this shop',
                 success: false

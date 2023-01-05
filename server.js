@@ -24,6 +24,7 @@ app.post('/auth/v1/register', require('./routes/Auth/register'));
 app.post('/shop/v1/create', require('./misc/middleware/Auth'), require('./routes/Shop/createShop'));
 app.get('/shop/v1/:id', require('./routes/Shop/getShop'));
 app.patch('/shop/v1/:id', require('./misc/middleware/Auth'), require('./routes/Shop/updateShop'));
+app.delete('/shop/v1/:id', require('./misc/middleware/Auth'), require('./routes/Shop/deleteShop'));
 
 // Routes
 app.listen(port, () => {

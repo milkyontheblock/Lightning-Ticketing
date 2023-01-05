@@ -28,7 +28,8 @@ module.exports = async function (req, res, next) {
         // Send a response
         res.status(201).json({
             message: 'Shop created',
-            success: true
+            success: true,
+            id: shop._id
         });
     } catch(err) {
         res.status(500).json({ 
