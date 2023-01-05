@@ -61,7 +61,16 @@ module.exports = async function (req, res, next) {
         await req.cart.save();
 
         // Return cart
-        res.status(200).json({ cart: req.cart, success: true });
+        res.status(200).json({
+            message: `Added ${addToCartMetaData.quantity} tickets to cart`,
+            success: true,
+            cart: {
+                id: req.cart._id,
+                tickets: req.cart.tickets,
+                total: req.cart.tickets.length,
+                expiresOn: new Date(reserveDuration + new Date().getTime()) 
+            }
+        });
     } catch(err) {
         res.status(500).json({ message: err.message, success: false });
     }
