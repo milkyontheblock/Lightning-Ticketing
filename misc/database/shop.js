@@ -32,8 +32,7 @@ const shopSchema = new mongoose.Schema({
     location: {
         type: String,
         minlength: 1,
-        maxlength: 100,
-        match: /^\S*$/,
+        maxlength: 150,
         default: null
     },
     events: [{

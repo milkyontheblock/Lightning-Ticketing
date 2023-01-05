@@ -12,6 +12,7 @@ module.exports = async function (req, res, next) {
 
         // Get the shop data from the request body
         const shopData = req.body;
+        console.log(shopData)
 
         // Get the shop from the database
         const shop = await Shop.findById(req.params.id);
@@ -25,7 +26,7 @@ module.exports = async function (req, res, next) {
         }
 
         // Make sure the shop belongs to the vendor
-        if (shop.vendor.toString() !== req.user._id.toString()) {
+        if (shop.creator.toString() !== req.user._id.toString()) {
             return res.status(401).json({
                 message: 'Shop does not belong to vendor',
                 success: false
@@ -33,9 +34,9 @@ module.exports = async function (req, res, next) {
         }
 
         // Update the shop
-        shop.name = shopData.name;
-        shop.description = shopData.description;
-        shop.location = shopData.location;
+        if (shopData.title) shop.title = shopData.title;
+        if (shopData.description) shop.description = shopData.description;
+        if (shopData.location) shop.location = shopData.location;
 
         // Store the shop in the database
         await shop.save();
