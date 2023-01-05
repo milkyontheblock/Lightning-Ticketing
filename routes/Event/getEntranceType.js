@@ -19,8 +19,16 @@ module.exports = async function (req, res, next) {
             .select('-_id -__v')
             .populate({
                 path: 'event',
-                select: '-_id -maxCapacity -__v -createdOn -creator'
+                select: '-_id -maxCapacity -__v -createdOn'
             })
+
+        // Only allow the vendor to retrieve their own entrance types
+        if (entranceType.event.creator.toString() !== req.user.id) {
+            return res.status(401).json({
+                message: 'Only vendors can retrieve their own entrance types',
+                success: false
+            })
+        }
 
 
         // Return the entrance type
