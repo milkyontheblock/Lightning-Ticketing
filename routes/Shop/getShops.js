@@ -12,7 +12,7 @@ module.exports = async function (req, res, next) {
 
         // Get the shops from the database that belong to the vendor
         const shops = await Shop.find({ creator: req.user._id })
-            .select(['-creator', '-__v', '-_id'])
+            .select('-__v')
             .populate('events')
 
         // Send a response
