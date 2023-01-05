@@ -2,11 +2,12 @@ const Cart = require('../../misc/database/cart');
 
 module.exports = async function (req, res, next) {
     try {
-        // Check if 'cartId' exists in the request body
-        // If it does, find the cart in the database
-        // If it doesn't, create a new cart
-        const cart = req.body.cartId
-            ? await Cart.findById(req.body.cartId)
+        // Check if the cart ID is in the request headers
+        const cartId = req.headers['x-cart-id'];
+
+        // Find the cart in the database or create a new one
+        const cart = cartId
+            ? await Cart.findById(cartId)
             : new Cart({
                 createdOn: new Date(),
                 tickets: []
