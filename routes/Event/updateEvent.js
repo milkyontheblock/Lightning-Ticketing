@@ -25,7 +25,7 @@ module.exports = async function (req, res, next) {
         }
 
         // Make sure the event belongs to the vendor
-        if (event.vendor.toString() !== req.user._id.toString()) {
+        if (event.creator.toString() !== req.user._id.toString()) {
             return res.status(401).json({
                 message: 'Only vendors can update their own events',
                 success: false
@@ -36,8 +36,7 @@ module.exports = async function (req, res, next) {
         event.title = eventData.title;
         event.description = eventData.description;
         event.location = eventData.location;
-        event.date = eventData.date;
-        event.entranceTypes = eventData.entranceTypes;
+        event.startDate = eventData.startDate;
         
         // Store the event in the database
         await event.save();
