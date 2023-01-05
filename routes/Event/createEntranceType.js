@@ -14,8 +14,11 @@ module.exports = async function (req, res, next) {
         // Get the entrance type data from the request body
         const entranceTypeData = req.body;
 
+        // Get the event id from the request params
+        const eventId = req.params.id;
+
         // Make sure the event exists
-        const event = await Event.findById(entranceTypeData.eventId);
+        const event = await Event.findById(eventId)
         if (!event) {
             return res.status(404).json({
                 message: 'Event not found',
@@ -23,22 +26,44 @@ module.exports = async function (req, res, next) {
             })
         }
 
+        // Make sure the event belongs to the vendor
+        if (event.creator.toString() !== req.user._id.toString()) {
+            return res.status(401).json({
+                message: 'This event does not belong to you',
+                success: false
+            })
+        }
+
+        // Make sure the event has not started yet
+        if (event.date < Date.now()) {
+            return res.status(401).json({
+                message: 'This event has already started',
+                success: false
+            })
+        }
+
+        // Make sure the title is not chosen yet
+        const entranceTypeExists = await EntranceType.findOne({ title: entranceTypeData.title, event: eventId });
+        if (entranceTypeExists) {
+            return res.status(400).json({
+                message: `Entrance type with title '${entranceTypeData.title}' already exists`,
+                success: false
+            })
+        }
+
         // Create a new entrance type object
         const entranceType = new EntranceType({
-            name: entranceTypeData.name,
-            description: entranceTypeData.description,
-            price: entranceTypeData.price,
-            event: entranceTypeData.eventId
+            title: entranceTypeData.title,
+            event: eventId,
+            capacity: entranceTypeData.capacity,
+            price: {
+                amount: entranceTypeData.price.amount,
+                currency: entranceTypeData.price.currency
+            },
         });
 
         // Store the entrance type in the database
         await entranceType.save();
-
-        // Add the entrance type to the event
-        event.entranceTypes.push(entranceType._id);
-
-        // Store the event in the database
-        await event.save();
 
         // Return the entrance type
         res.status(200).json({

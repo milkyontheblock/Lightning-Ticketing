@@ -6,7 +6,6 @@ const entranceTypeSchema = new mongoose.Schema({
         type: String,
         minlength: 1,
         maxlength: 100,
-        match: /^\S*$/,
         required: [true, 'Entrance type title is required'],
     },
     event: {
