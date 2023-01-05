@@ -15,7 +15,7 @@ module.exports = async function (req, res, next) {
         
         // Send a response
         res.status(200).json({
-            message: 'Events retrieved',
+            message: 'Retrieved all of your events',
             success: true,
             events: events
         });
