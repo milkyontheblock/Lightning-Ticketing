@@ -1,4 +1,4 @@
-const User = require('../misc/database/user');
+const User = require('../../misc/database/user');
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
@@ -9,7 +9,7 @@ module.exports = async function (req, res, next) {
         const token = req.header('Authorization').replace('Bearer ', '');
 
         // Get public key from file
-        const publicKey = fs.readFileSync(path.join(__dirname, '../misc/public.pem'), 'utf8');
+        const publicKey = fs.readFileSync(path.join(__dirname, '../../misc/certificate/public.pem'), 'utf8');
 
         // Verify token using public key
         const decoded = jwt.verify(token, publicKey, { algorithms: ['RS256'] });
@@ -22,13 +22,8 @@ module.exports = async function (req, res, next) {
             throw new Error('User not found');
         }
 
-        // Check if token is valid
-        if (!user.tokens.includes(token)) {
-            throw new Error('Invalid token');
-        }
-
         // Store user and token in request object
-        req.user = decoded;
+        req.user = user;
 
         // Continue to next middleware
         next();
