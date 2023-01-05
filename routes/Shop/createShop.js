@@ -3,6 +3,7 @@ const Shop = require('../../misc/database/shop');
 module.exports = async function (req, res, next) {
     try {
         // Make sure only vendors can create shops
+        console.log(req.user)
         if (req.user.role !== 'vendor') {
             return res.status(401).json({
                 message: 'Only vendors can create shops',
@@ -15,11 +16,10 @@ module.exports = async function (req, res, next) {
 
         // Create a new shop object
         const shop = new Shop({
-            name: shopData.name,
+            title: shopData.title,
             description: shopData.description,
             location: shopData.location,
-            vendor: req.user._id,
-            events: shopData.events
+            creator: req.user._id
         });
 
         // Store the shop in the database

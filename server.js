@@ -21,6 +21,7 @@ db.once('open', () => console.log('Connected to MongoDB'));
 // Import Routes
 app.post('/auth/v1/login', require('./routes/Auth/login'));
 app.post('/auth/v1/register', require('./routes/Auth/register'));
+app.post('/shop/v1/create', require('./misc/middleware/Auth'), require('./routes/Shop/createShop'));
 
 // Routes
 app.listen(port, () => {

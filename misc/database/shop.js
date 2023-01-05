@@ -20,16 +20,21 @@ const shopSchema = new mongoose.Schema({
     title: {
         type: String,
         minlength: 1,
-        maxlength: 100,
-        match: /^\S*$/,
+        maxlength: 150,
         required: true,
     },
     description: {
         type: String,
         minlength: 1,
         maxlength: 1000,
-        match: /^\S*$/,
         required: false,
+    },
+    location: {
+        type: String,
+        minlength: 1,
+        maxlength: 100,
+        match: /^\S*$/,
+        default: null
     },
     events: [{
         type: mongoose.Schema.Types.ObjectId,
