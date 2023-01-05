@@ -12,7 +12,7 @@ module.exports = async function (req, res, next) {
         }
 
         // Get the shop from the database
-        const shop = await Shop.findById(req.body.shopId);
+        const shop = await Shop.findById(req.params.shopId);
 
         // Make sure the shop exists
         if (!shop) {
@@ -23,7 +23,7 @@ module.exports = async function (req, res, next) {
         }
 
         // Make sure the shop belongs to the vendor
-        if (shop.vendor.toString() !== req.user._id.toString()) {
+        if (shop.creator.toString() !== req.user._id.toString()) {
             return res.status(401).json({
                 message: 'Shop does not belong to vendor',
                 success: false
@@ -31,9 +31,7 @@ module.exports = async function (req, res, next) {
         }
 
         // Get the event from the database
-        const event = await Event.findById(req.body.eventId);
-
-        // Make sure the event exists
+        const event = await Event.findById(req.params.eventId);
         if (!event) {
             return res.status(404).json({
                 message: 'Event not found',
@@ -42,15 +40,22 @@ module.exports = async function (req, res, next) {
         }
 
         // Make sure the event belongs to the vendor
-        if (event.vendor.toString() !== req.user._id.toString()) {
+        if (event.creator.toString() !== req.user._id.toString()) {
             return res.status(401).json({
                 message: 'Event does not belong to vendor',
                 success: false
             })
         }
 
-        // Add the event to the shop
-        shop.events.push(event);
+        // Add the event to the shop but make sure it's not already added
+        if (!shop.events.includes(event._id)) {
+            shop.events.push(event._id);
+        } else {
+            return res.status(400).json({
+                message: 'Event already added to shop',
+                success: false
+            })
+        }
 
         // Save the shop in the database
         await shop.save();

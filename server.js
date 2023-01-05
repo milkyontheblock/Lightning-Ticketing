@@ -39,6 +39,7 @@ app.get('/event/v1/:id/types', auth, require('./routes/Event/getEntranceTypes'))
 app.get('/event/v1/:eventId/type/:entranceTypeId', auth, require('./routes/Event/getEntranceType'));
 app.patch('/event/v1/:eventId/type/:entranceTypeId', auth, require('./routes/Event/updateEntranceType'));
 app.delete('/event/v1/:eventId/type/:entranceTypeId', auth, require('./routes/Event/deleteEntranceType'));
+app.post('/shop/v1/:shopId/event/:eventId', auth, require('./routes/Shop/addToShop'));
 
 // Routes
 app.listen(port, () => {
