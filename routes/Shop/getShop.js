@@ -33,7 +33,7 @@ module.exports = async function (req, res, next) {
     } catch(err) {
         console.log(err.stack)
         res.status(500).json({ 
-            succes: false,  
+            success: false,  
             message: err.message 
         });
     }

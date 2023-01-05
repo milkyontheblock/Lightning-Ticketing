@@ -49,7 +49,7 @@ module.exports = async function (req, res, next) {
         });
     } catch(err) {
         res.status(500).json({ 
-            succes: false,  
+            success: false,  
             message: err.message 
         });
     }
