@@ -7,14 +7,12 @@ const eventSchema = new mongoose.Schema({
         type: String,
         minlength: 1,
         maxlength: 100,
-        match: /^\S*$/,
         required: [true, 'Event title is required'],
     },
     description: {
         type: String,
         minlength: 1,
         maxlength: 1000,
-        match: /^\S*$/,
         default: null,
     },
     startDate: {

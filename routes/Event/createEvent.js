@@ -18,8 +18,8 @@ module.exports = async function (req, res, next) {
             title: eventData.title,
             description: eventData.description,
             location: eventData.location,
-            date: eventData.date,
-            vendor: req.user._id,
+            startDate: eventData.startDate,
+            creator: req.user._id,
             entranceTypes: eventData.entranceTypes
         });
 

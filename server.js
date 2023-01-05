@@ -26,6 +26,7 @@ app.get('/shop/v1/:id', require('./routes/Shop/getShop'));
 app.get('/shops/v1', require('./misc/middleware/Auth'), require('./routes/Shop/getShops'));
 app.patch('/shop/v1/:id', require('./misc/middleware/Auth'), require('./routes/Shop/updateShop'));
 app.delete('/shop/v1/:id', require('./misc/middleware/Auth'), require('./routes/Shop/deleteShop'));
+app.post('/event/v1/create', require('./misc/middleware/Auth'), require('./routes/Event/createEvent'));
 
 // Routes
 app.listen(port, () => {
