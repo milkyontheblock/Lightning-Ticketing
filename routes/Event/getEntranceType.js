@@ -10,27 +10,18 @@ module.exports = async function (req, res, next) {
             })
         }
 
+        // Request body
+        const { eventId, entranceTypeId } = req.params;
+
         // Find the entrance type in the database and populate the event
-        const entranceType = await EntranceType.findById(req.params.id).populate({
-            path: 'event',
-            select: '-entranceTypes'
-        });
-
-        // Make sure the entrance type exists
-        if (!entranceType) {
-            return res.status(404).json({
-                message: 'Entrance type not found',
-                success: false
+        // but only select the title, description, and price
+        const entranceType = await EntranceType.findById(entranceTypeId)
+            .select('-_id -__v')
+            .populate({
+                path: 'event',
+                select: '-_id -maxCapacity -__v -createdOn -creator'
             })
-        }
 
-        // Make sure the entrance type belongs to the vendor
-        if (entranceType.event.vendor.toString() !== req.user._id.toString()) {
-            return res.status(401).json({
-                message: 'Entrance type not found',
-                success: false
-            })
-        }
 
         // Return the entrance type
         res.status(200).json({
