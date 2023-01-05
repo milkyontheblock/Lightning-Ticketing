@@ -11,7 +11,7 @@ module.exports = async function (req, res, next) {
         }
 
         // Get the shops from the database that belong to the vendor
-        const shops = await Shop.find({ vendor: req.user._id });
+        const shops = await Shop.find({ creator: req.user._id });
 
         // Send a response
         res.status(200).json({
@@ -20,8 +20,8 @@ module.exports = async function (req, res, next) {
             shops: shops
         });
     } catch(err) {
-        res.status(500).json({ 
-            succes: false,  
+        res.status(500).json({
+            success: false,  
             message: err.message 
         });
     }
