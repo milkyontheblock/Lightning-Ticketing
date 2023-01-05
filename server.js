@@ -30,7 +30,7 @@ app.get('/shops/v1', auth, require('./routes/Shop/getShops'));
 app.patch('/shop/v1/:id', auth, require('./routes/Shop/updateShop'));
 app.delete('/shop/v1/:id', auth, require('./routes/Shop/deleteShop'));
 app.post('/event/v1/create', auth, require('./routes/Event/createEvent'));
-app.get('/event/v1/:id', auth, require('./routes/Event/getEvent'));
+app.get('/event/v1/:id', require('./routes/Event/getEvent'));
 
 // Routes
 app.listen(port, () => {
