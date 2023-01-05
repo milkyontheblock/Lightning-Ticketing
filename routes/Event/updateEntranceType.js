@@ -10,14 +10,17 @@ module.exports = async function (req, res, next) {
             })
         }
 
+        // Get the entrance type data from the request params
+        const { eventId, entranceTypeId } = req.params;
+
         // Get the entrance type data from the request body
         const entranceTypeData = req.body;
 
         // Make sure the entrance type exists
-        const entranceType = await EntranceType.findById(entranceTypeData.entranceTypeId).populate({
+        const entranceType = await EntranceType.findById(entranceTypeId).populate({
             path: 'event',
-            select: '-entranceTypes' // Don't return the entrance types
-        })
+            select: '-entranceTypes'
+        });
         if (!entranceType) {
             return res.status(404).json({
                 message: 'Entrance type not found',
@@ -25,18 +28,19 @@ module.exports = async function (req, res, next) {
             })
         }
 
-        // Make sure the entrance type belongs to the vendor
-        if (entranceType.event.vendor.toString() !== req.user._id.toString()) {
+        // Only the vendor that created the event can update the entrance type
+        if (entranceType.event.creator.toString() !== req.user.id) {
             return res.status(401).json({
-                message: 'Entrance type does not belong to vendor',
+                message: 'Only the vendor that created the event can update the entrance type',
                 success: false
             })
         }
 
         // Update the entrance type
-        entranceType.name = entranceTypeData.name;
-        entranceType.description = entranceTypeData.description;
-        entranceType.price = entranceTypeData.price;
+        entranceType.price = {
+            currency: entranceTypeData.price.currency,
+            amount: entranceTypeData.price.amount
+        }
 
         // Store the entrance type in the database
         await entranceType.save();
