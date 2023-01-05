@@ -11,8 +11,11 @@ module.exports = async function (req, res, next) {
             })
         }
 
+        // Get the entrance type and event id from request params
+        const { eventId, entranceTypeId } = req.params;
+
         // Find the entrance type in the database
-        const entranceType = await EntranceType.findById(req.body.entranceTypeId).populate({
+        const entranceType = await EntranceType.findById(entranceTypeId).populate({
             path: 'event',
             select: '-entranceTypes'
         });
@@ -26,30 +29,9 @@ module.exports = async function (req, res, next) {
         }
 
         // Make sure the entrance type belongs to the vendor
-        if (entranceType.event.vendor.toString() !== req.user._id.toString()) {
+        if (entranceType.event.creator.toString() !== req.user._id.toString()) {
             return res.status(401).json({
                 message: 'Entrance type does not belong to vendor',
-                success: false
-            })
-        }
-
-        // Find the event in the database
-        const event = await Event.findById(entranceType.event._id);
-
-        // Make sure the event exists
-        if (!event) {
-            return res.status(404).json({
-                message: 'Event not found',
-                success: false
-            })
-        }
-
-        const index = event.entranceTypes.indexOf(entranceType._id);
-        if (index > -1) {
-            event.entranceTypes.splice(index, 1);
-        } else {
-            return res.status(404).json({
-                message: 'Entrance type not found in event',
                 success: false
             })
         }
@@ -59,7 +41,7 @@ module.exports = async function (req, res, next) {
 
         // Return the entrance type
         res.status(200).json({
-            message: `Entrance type deleted for ${entranceType.title}`,
+            message: `Deleted ${entranceType.title}`,
             success: true,
             entranceType: entranceType
         });

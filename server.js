@@ -38,6 +38,7 @@ app.post('/event/v1/:id/type', auth, require('./routes/Event/createEntranceType'
 app.get('/event/v1/:id/types', auth, require('./routes/Event/getEntranceTypes'));
 app.get('/event/v1/:eventId/type/:entranceTypeId', auth, require('./routes/Event/getEntranceType'));
 app.patch('/event/v1/:eventId/type/:entranceTypeId', auth, require('./routes/Event/updateEntranceType'));
+app.delete('/event/v1/:eventId/type/:entranceTypeId', auth, require('./routes/Event/deleteEntranceType'));
 
 // Routes
 app.listen(port, () => {
