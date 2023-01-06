@@ -45,9 +45,12 @@ module.exports = async function (req, res, next) {
 
         // Remove expired tickets from the cart
         req.cart.tickets = req.cart.tickets.filter(ticketId => {
-            ticket = ticketId.toString();
+            ticketId = ticketId.toString();
             return !expiredTicketIds.includes(ticketId)
         });
+
+        // Update cart timestamp
+        req.cart.updatedOn = new Date();
 
         // Save cart to database
         await req.cart.save();
@@ -67,6 +70,6 @@ module.exports = async function (req, res, next) {
             cart: cartContent
         });
     } catch (error) {
-        res.status(500).json({ message: error.message, success: false });
+        res.status(500).json({ message: error.stack, success: false });
     }
 }
