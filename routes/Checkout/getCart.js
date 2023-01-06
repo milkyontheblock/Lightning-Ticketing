@@ -49,6 +49,13 @@ module.exports = async function (req, res, next) {
             return !expiredTicketIds.includes(ticketId)
         });
 
+        // Remove tickets from cart if they are not in the database
+        const ticketIds = tickets.map(ticket => ticket._id.toString());
+        req.cart.tickets = req.cart.tickets.filter(ticketId => {
+            ticketId = ticketId.toString();
+            return ticketIds.includes(ticketId);
+        });
+
         // Update cart timestamp
         req.cart.updatedOn = new Date();
 
@@ -57,6 +64,7 @@ module.exports = async function (req, res, next) {
 
         // Create cart content object
         const cartContent = {
+            unfilteredTickets: tickets,
             tickets: req.cart.tickets.map(ticket => {
                 return tickets.find(t => t._id.toString() === ticket.toString());
             }),
