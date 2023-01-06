@@ -26,15 +26,13 @@ module.exports = async function (req, res, next) {
             return res.status(400).json({ message: 'Entrance type is sold out', success: false });
         }
 
-        // Find tickets that are reserved but not claimed within the reserve duration
-        const reserveDuration = config.cart.session.maxDuration
-        const unclaimedTickets = mintedTickets.filter(ticket => {
-            return ticket.status === 'reserved' && ticket.createdOn.getTime() + reserveDuration > new Date().getTime()
-        });
+        // Create an array of minted tickets that are reserved for longer than the reserve duration
+        const reserveDuration = config.cart.session.maxDuration;
+        const unclaimedTickets = mintedTickets.filter(ticket => ticket.createdOn.getTime() + reserveDuration < new Date().getTime());
 
         // Remove those tickets from the database
-        await Ticket.deleteMany({ _id: { $in: unclaimedTickets.map(ticket => ticket._id) } });
-
+        const purgeUnclaimed = await Ticket.deleteMany({ _id: { $in: unclaimedTickets.map(ticket => ticket._id) } });
+            
         // Check if there are enough tickets left
         const ticketsLeft = maxCapacity - mintedTickets.length + unclaimedTickets.length;
         if (ticketsLeft < addToCartMetaData.quantity) {
@@ -52,7 +50,6 @@ module.exports = async function (req, res, next) {
 
         // Save tickets to database
         const createTickets = await Ticket.insertMany(tickets);
-        console.log(createTickets)
 
         // Add tickets to cart
         req.cart.tickets.push(...tickets.map(ticket => ticket._id));
