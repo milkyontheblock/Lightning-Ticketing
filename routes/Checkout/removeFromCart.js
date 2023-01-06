@@ -1,5 +1,6 @@
 const Ticket = require('../../misc/database/ticket')
 const Cart = require('../../misc/database/cart');
+const { updateCart } = require('./misc/updateCart');
 
 module.exports = async function (req, res, next) {
     try {
@@ -10,6 +11,12 @@ module.exports = async function (req, res, next) {
 
         // Get the metadata from the request body
         const { eventId, entranceTypeId, quantity } = req.body;
+
+        // Update the cart before making any changes
+        const cartUpdateProcess = await updateCart(req.cart._id);
+        if (!cartUpdateProcess.success) {
+            return res.status(500).json({ message: cartUpdateProcess.message, success: false });
+        }
 
         // Using the ticket IDs in the cart, find the tickets in the database
         const tickets = await Ticket.find({ _id: { $in: req.cart.tickets } });

@@ -1,7 +1,6 @@
-const Cart = require('../../misc/database/cart');
 const EntranceType = require('../../misc/database/entranceType');
 const Ticket = require('../../misc/database/ticket');
-const config = require('../../config.json')
+const config = require('../../config.json');
 
 module.exports = async function (req, res, next) {
     try {
@@ -14,7 +13,7 @@ module.exports = async function (req, res, next) {
         }
 
         // Get the metadata from the request body
-        const addToCartMetaData = req.body;
+        const addToCartMetaData = req.body
 
         // Remove tickets from cart if they are not in the database anymore
         const cartTickets = await Ticket.find({ _id: { $in: req.cart.tickets } });

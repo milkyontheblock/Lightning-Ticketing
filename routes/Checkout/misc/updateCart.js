@@ -59,3 +59,5 @@ async function updateCart(id) {
         success: true
     };
 }
+
+module.exports = {updateCart};
