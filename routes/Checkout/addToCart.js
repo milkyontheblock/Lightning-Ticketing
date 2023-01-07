@@ -3,6 +3,7 @@ const Event = require('../../misc/database/event');
 const Ticket = require('../../misc/database/ticket');
 const Order = require('../../misc/database/order');
 const config = require('../../config.json');
+const {log} = require('../../misc/utility');
 
 module.exports = async function (req, res, next) {
     try {
@@ -59,6 +60,7 @@ module.exports = async function (req, res, next) {
                     success: false
                 });
             }
+            log(`Deleted ${expiredOrders.length} expired orders`, 'CHECKOUT');
 
             // After removing expired orders, delete their tickets
             const ticketPurge = await Ticket.deleteMany({ _id: { $in: expiredOrderTicketIds } });
@@ -68,6 +70,7 @@ module.exports = async function (req, res, next) {
                     success: false,
                 });
             }
+            log(`Deleted ${expiredOrderTicketIds.length} tickets that belong to expired orders`, 'CHECKOUT');
         }
 
         // Find all tickets that are reserved but not claimed
@@ -85,11 +88,13 @@ module.exports = async function (req, res, next) {
                     success: false
                 });
             }
+            log(`Deleted ${expiredTickets.length} expired tickets`, 'CHECKOUT');
     
             // After removing expired tickets, remove them from the cart
             req.cart.tickets = req.cart.tickets.filter(t => !expiredTickets.map(t => t._id.toString()).includes(t.toString()));
             req.cart.updatedOn = Date.now();
             await req.cart.save();
+            log(`Updated cart after removing expired tickets`, `CHECKOUT`)
         }
 
         // ### Add to cart logic ###
@@ -112,7 +117,8 @@ module.exports = async function (req, res, next) {
                 event: payload.eventId
             }));
         }
-        const createdTickets = await Ticket.insertMany(newTickets);
+        await Ticket.insertMany(newTickets);
+        log(`Created ${newTickets.length} tickets`, 'CHECKOUT');
 
         // Create a new array of ticket IDs
         const newTicketIds = createdTickets.map(t => t._id.toString());
