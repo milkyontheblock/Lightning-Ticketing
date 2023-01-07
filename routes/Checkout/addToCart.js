@@ -87,13 +87,35 @@ module.exports = async function (req, res, next) {
         
         // Add the tickets to the cart
         req.cart.tickets.push([...newTicketIds]);
+
+        // Update the cart timestamp
+        req.cart.updatedOn = Date.now();
+
+        // Save the cart
         await req.cart.save();
+
+        // Get the tickets with metadata
+        const ticketsWithMetadata = await Ticket.find({ _id: { $in: req.cart.tickets.map(t => t.toString()) } })
+            .select('-_id -__v')
+            .populate({
+                path: 'entranceType',
+                select: '-_id -__v -event -capacity',
+            })
+            .populate({
+                path: 'event',
+                select: '-_id -__v -creator -createdOn -maxCapacity',
+            });
 
         // Return the cart
         res.status(200).json({
             message: 'Successfully added to cart',
             success: true,
-            cart: req.cart
+            cart: {
+                id: req.cart._id,
+                tickets: ticketsWithMetadata,
+                total: ticketsWithMetadata.reduce((acc, t) => acc + t.entranceType.price.amount, 0),
+                updatedOn: req.cart.updatedOn
+            }
         });
     } catch(err) {
         res.status(500).json({ message: err.message, success: false });

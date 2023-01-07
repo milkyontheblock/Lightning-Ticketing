@@ -1,6 +1,6 @@
 const Ticket = require('../../misc/database/ticket')
 const Cart = require('../../misc/database/cart');
-const { updateCart } = require('./misc/updateCart');
+const config = require('../../config.json');
 
 module.exports = async function (req, res, next) {
     try {
@@ -12,41 +12,75 @@ module.exports = async function (req, res, next) {
         // Get the metadata from the request body
         const { eventId, entranceTypeId, quantity } = req.body;
 
-        // Update the cart before making any changes
-        const cartUpdateProcess = await updateCart(req.cart._id);
-        if (!cartUpdateProcess.success) {
-            return res.status(500).json({ message: cartUpdateProcess.message, success: false });
-        }
-
-        // Using the ticket IDs in the cart, find the tickets in the database
+        // ### Default cart logic ###
+        // Find all tickets in your cart that are reserved but not claimed
+        // within the reservation time limit
+        const reservationPeriod = config.cart.session.maxDuration;
         const tickets = await Ticket.find({ _id: { $in: req.cart.tickets } });
+        const expiredTickets = tickets.filter(t => t.createdOn.getTime() + reservationPeriod < Date.now());
 
-        // Create an array of tickets to remove
-        const ticketsToRemove = tickets.filter(ticket => {
-            return ticket.event == eventId && ticket.entranceType == entranceTypeId
-        }).slice(0, quantity);
-
-        // Delete the tickets from the database
-        const ticketIdsToRemove = ticketsToRemove.map(ticket => ticket._id.toString());
-        const removeQuery = await Ticket.deleteMany({ _id: { $in: ticketIdsToRemove } });
-        if (removeQuery.deletedCount != ticketIdsToRemove.length) {
-            return res.status(500).json({ message: 'Could not remove tickets from cart', success: false });
+        // If there are expired tickets, delete them
+        const expiredTicketIds = expiredTickets.map(t => t._id.toString());
+        const expiryPurge = await Ticket.deleteMany({ _id: { $in: expiredTicketIds } });
+        if (!expiryPurge.acknowledged) {
+            return res.status(500).json({ message: 'EXP_PURGE_UNACKNOWLEDGED', success: false });
         }
 
-        // Remove the tickets from the cart
-        req.cart.tickets = req.cart.tickets.filter(ticketId => {
-            ticketId = ticketId.toString();
-            return !ticketIdsToRemove.includes(ticketId)
+        // After removing expired tickets, remove them from the cart
+        req.cart.tickets = req.cart.tickets.filter(t => !expiredTicketIds.includes(t.toString()));
+        await req.cart.save();
+
+        // ### Custom cart logic ###
+        // Find the tickets in the cart that match the metadata
+        const ticketsToRemove = await Ticket.find({
+            _id: { $in: req.cart.tickets },
+            event: eventId,
+            entranceType: entranceTypeId
         });
 
-        // Save the cart to the database
-        const updatedCart = await req.cart.save();
+        // If there are no tickets to remove, return an error
+        if (ticketsToRemove.length === 0) {
+            return res.status(400).json({ message: 'NO_TICKETS_TO_REMOVE', success: false });
+        }
 
-        res.json({ 
-            message: 'Tickets removed from cart',
+        // If the quantity to remove is greater than the quantity in the cart
+        // just remove the quantity in the cart
+        const quantityToRemove = quantity > ticketsToRemove.length ? ticketsToRemove.length : quantity;
+        const ticketsToRemoveIds = ticketsToRemove.slice(0, quantityToRemove).map(t => t._id.toString());
+
+        // Remove the tickets from the cart
+        req.cart.tickets = req.cart.tickets.filter(t => !ticketsToRemoveIds.includes(t.toString()));
+        await req.cart.save();
+
+        // Delete the tickets from the database
+        const ticketPurge = await Ticket.deleteMany({ _id: { $in: ticketsToRemoveIds } });
+        if (!ticketPurge.acknowledged) {
+            return res.status(500).json({ message: 'TICKET_PURGE_UNACKNOWLEDGED', success: false });
+        }
+
+        // Get the metadata of the tickets in the cart
+        const ticketsWithMetadata = await Ticket.find({ _id: { $in: req.cart.tickets } })
+            .select('-_id -__v')
+            .populate({
+                path: 'entranceType',
+                select: '-_id -__v -event -capacity',
+            })
+            .populate({
+                path: 'event',
+                select: '-_id -__v -creator -createdOn -maxCapacity',
+            });
+
+        // Return the cart
+        res.status(200).json({
+            message: 'Successfully removed tickets from cart',
             success: true,
-            cart: updatedCart
-        })
+            cart: {
+                id: req.cart._id,
+                tickets: ticketsWithMetadata,
+                total: ticketsWithMetadata.reduce((acc, t) => acc + t.entranceType.price.amount, 0),
+                updatedOn: req.cart.updatedOn
+            }
+        });
     } catch(err) {
         res.status(500).json({ message: err.message, success: false });
     }

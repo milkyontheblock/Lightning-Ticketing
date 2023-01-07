@@ -43,7 +43,10 @@ module.exports = async function (req, res, next) {
             message: 'Cart retrieved successfully',
             success: true, 
             cart: {
-                tickets: ticketsWithMetadata
+                id: req.cart._id,
+                tickets: ticketsWithMetadata,
+                total: ticketsWithMetadata.reduce((acc, t) => acc + t.entranceType.price.amount, 0),
+                updatedOn: req.cart.updatedOn,
             }
         });
     } catch (error) {
