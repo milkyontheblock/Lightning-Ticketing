@@ -1,5 +1,4 @@
 const Ticket = require('../../misc/database/ticket')
-const Cart = require('../../misc/database/cart');
 const config = require('../../config.json');
 
 module.exports = async function (req, res, next) {
@@ -20,15 +19,18 @@ module.exports = async function (req, res, next) {
         const expiredTickets = tickets.filter(t => t.createdOn.getTime() + reservationPeriod < Date.now());
 
         // If there are expired tickets, delete them
-        const expiredTicketIds = expiredTickets.map(t => t._id.toString());
-        const expiryPurge = await Ticket.deleteMany({ _id: { $in: expiredTicketIds } });
-        if (!expiryPurge.acknowledged) {
-            return res.status(500).json({ message: 'EXP_PURGE_UNACKNOWLEDGED', success: false });
+        if (expiredTickets.length > 0) {
+            const expiredTicketIds = expiredTickets.map(t => t._id.toString());
+            const expiryPurge = await Ticket.deleteMany({ _id: { $in: expiredTicketIds } });
+            if (!expiryPurge.acknowledged) {
+                return res.status(500).json({ message: 'EXP_PURGE_UNACKNOWLEDGED', success: false });
+            }
+    
+            // After removing expired tickets, remove them from the cart
+            req.cart.tickets = req.cart.tickets.filter(t => !expiredTicketIds.includes(t.toString()));
+            req.cart.updatedOn = Date.now();
+            await req.cart.save();
         }
-
-        // After removing expired tickets, remove them from the cart
-        req.cart.tickets = req.cart.tickets.filter(t => !expiredTicketIds.includes(t.toString()));
-        await req.cart.save();
 
         // ### Custom cart logic ###
         // Find the tickets in the cart that match the metadata

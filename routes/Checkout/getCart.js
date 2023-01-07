@@ -16,16 +16,18 @@ module.exports = async function (req, res, next) {
         const expiredTickets = tickets.filter(t => t.createdOn.getTime() + reservationPeriod < Date.now());
 
         // If there are expired tickets, delete them
-        const expiredTicketIds = expiredTickets.map(t => t._id.toString());
-        const expiryPurge = await Ticket.deleteMany({ _id: { $in: expiredTicketIds } });
-        if (!expiryPurge.acknowledged) {
-            return res.status(500).json({ message: 'Failed to delete expired tickets', success: false });
+        if (expiredTickets.length > 0) {
+            const expiredTicketIds = expiredTickets.map(t => t._id.toString());
+            const expiryPurge = await Ticket.deleteMany({ _id: { $in: expiredTicketIds } });
+            if (!expiryPurge.acknowledged) {
+                return res.status(500).json({ message: 'Failed to delete expired tickets', success: false });
+            }
+    
+            // After removing expired tickets, remove them from the cart
+            req.cart.tickets = req.cart.tickets.filter(t => !expiredTicketIds.includes(t.toString()));
+            req.cart.updatedOn = Date.now();
+            await req.cart.save();
         }
-
-        // After removing expired tickets, remove them from the cart
-        req.cart.tickets = req.cart.tickets.filter(t => !expiredTicketIds.includes(t.toString()));
-        req.cart.updatedOn = Date.now();
-        await req.cart.save();
 
         // ### Custom cart logic ###
         // Create an array of tickets with metadata

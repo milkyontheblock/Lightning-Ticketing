@@ -49,24 +49,25 @@ module.exports = async function (req, res, next) {
 
         // If there are expired orders, create an array of their ticket IDs
         const expiredOrderTicketIds = expiredOrders.map(o => o.tickets.map(t => t.toString())).flat();
-        console.log({ expiredOrderTicketIds })
 
         // If there are expired orders, delete them
-        const orderPurge = await Order.deleteMany({ _id: { $in: expiredOrders.map(o => o._id) } });
-        if (!orderPurge.acknowledged) {
-            return res.status(500).json({
-                message: 'Oops, failed to delete expired orders',
-                success: false
-            });
-        }
+        if (expiredOrders.length > 0) {
+            const orderPurge = await Order.deleteMany({ _id: { $in: expiredOrders.map(o => o._id) } });
+            if (!orderPurge.acknowledged) {
+                return res.status(500).json({
+                    message: 'Oops, failed to delete expired orders',
+                    success: false
+                });
+            }
 
-        // After removing expired orders, delete their tickets
-        const ticketPurge = await Ticket.deleteMany({ _id: { $in: expiredOrderTicketIds } });
-        if (!ticketPurge.acknowledged) {
-            return res.status(500).json({
-                message: 'Oops, failed to delete tickets that belong to expired orders',
-                success: false,
-            });
+            // After removing expired orders, delete their tickets
+            const ticketPurge = await Ticket.deleteMany({ _id: { $in: expiredOrderTicketIds } });
+            if (!ticketPurge.acknowledged) {
+                return res.status(500).json({
+                    message: 'Oops, failed to delete tickets that belong to expired orders',
+                    success: false,
+                });
+            }
         }
 
         // Find all tickets that are reserved but not claimed
@@ -76,17 +77,20 @@ module.exports = async function (req, res, next) {
         const expiredTickets = tickets.filter(t => t.createdOn.getTime() + reservationPeriod < Date.now());
 
         // If there are expired tickets, delete them
-        const expiryPurge = await Ticket.deleteMany({ _id: { $in: expiredTickets.map(t => t._id) } });
-        if (!expiryPurge.acknowledged) {
-            return res.status(500).json({ 
-                message: 'Oops, failed to delete expired tickets', 
-                success: false
-            });
+        if (expiredTickets.length > 0) {
+            const expiryPurge = await Ticket.deleteMany({ _id: { $in: expiredTickets.map(t => t._id) } });
+            if (!expiryPurge.acknowledged) {
+                return res.status(500).json({ 
+                    message: 'Oops, failed to delete expired tickets', 
+                    success: false
+                });
+            }
+    
+            // After removing expired tickets, remove them from the cart
+            req.cart.tickets = req.cart.tickets.filter(t => !expiredTickets.map(t => t._id.toString()).includes(t.toString()));
+            req.cart.updatedOn = Date.now();
+            await req.cart.save();
         }
-
-        // After removing expired tickets, remove them from the cart
-        req.cart.tickets = req.cart.tickets.filter(t => !expiredTickets.map(t => t._id.toString()).includes(t.toString()));
-        await req.cart.save();
 
         // ### Add to cart logic ###
         // Make sure there is enough space to create the quantity of tickets requested

@@ -30,25 +30,26 @@ module.exports = async function (req, res, next) {
         const expiredOrders = orders.filter(o => o.createdAt.getTime() + paymentPeriod < Date.now());
 
         // If there are expired orders, create an array of their ticket IDs
-        const expiredOrderTicketIds = expiredOrders.map(o => o.tickets.map(t => t.toString())).flat();
-        console.log({ expiredOrderTicketIds })
+        if (expiredOrders.length > 0) {
+            const expiredOrderTicketIds = expiredOrders.map(o => o.tickets.map(t => t.toString())).flat();
 
-        // If there are expired orders, delete them
-        const orderPurge = await Order.deleteMany({ _id: { $in: expiredOrders.map(o => o._id) } });
-        if (!orderPurge.acknowledged) {
-            return res.status(500).json({
-                message: 'Oops, failed to delete expired orders',
-                success: false
-            });
-        }
-
-        // After removing expired orders, delete their tickets
-        const ticketPurge = await Ticket.deleteMany({ _id: { $in: expiredOrderTicketIds } });
-        if (!ticketPurge.acknowledged) {
-            return res.status(500).json({
-                message: 'Oops, failed to delete tickets that belong to expired orders',
-                success: false,
-            });
+            // If there are expired orders, delete them
+            const orderPurge = await Order.deleteMany({ _id: { $in: expiredOrders.map(o => o._id) } });
+            if (!orderPurge.acknowledged) {
+                return res.status(500).json({
+                    message: 'Oops, failed to delete expired orders',
+                    success: false
+                });
+            }
+    
+            // After removing expired orders, delete their tickets
+            const ticketPurge = await Ticket.deleteMany({ _id: { $in: expiredOrderTicketIds } });
+            if (!ticketPurge.acknowledged) {
+                return res.status(500).json({
+                    message: 'Oops, failed to delete tickets that belong to expired orders',
+                    success: false,
+                });
+            }
         }
 
         // Find all tickets in your cart that are reserved but not claimed
@@ -124,9 +125,9 @@ module.exports = async function (req, res, next) {
         res.status(201).json({ 
             message: 'Order created successfully',
             success: true,
+            continueUrl: '/checkout/confirm',
             order: order,
             cart: req.cart,
-            continueUrl: '/checkout/confirm'
         });
     } catch(err) {
         res.status(500).json({ message: err.stack, success: false });
