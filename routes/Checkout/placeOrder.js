@@ -194,7 +194,6 @@ module.exports = async function (req, res, next) {
             cart: req.cart,
         });
     } catch(err) {
-        console.log(documents)
         res.status(500).json({ message: err.stack, success: false });
         revertOrderCreation();
         revertTicketReservation();
