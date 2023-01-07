@@ -1,6 +1,7 @@
 const EntranceType = require('../../misc/database/entranceType');
 const Event = require('../../misc/database/event');
 const Ticket = require('../../misc/database/ticket');
+const Order = require('../../misc/database/order');
 const config = require('../../config.json');
 
 module.exports = async function (req, res, next) {
@@ -41,6 +42,33 @@ module.exports = async function (req, res, next) {
         }
 
         // ### Default cart logic ###
+        // Find all orders that are pending and not paid within the payment time limit
+        const paymentPeriod = config.order.session.maxDuration;
+        const orders = await Order.find({ status: 'pending' });
+        const expiredOrders = orders.filter(o => o.createdAt.getTime() + paymentPeriod < Date.now());
+
+        // If there are expired orders, create an array of their ticket IDs
+        const expiredOrderTicketIds = expiredOrders.map(o => o.tickets.map(t => t.toString())).flat();
+        console.log({ expiredOrderTicketIds })
+
+        // If there are expired orders, delete them
+        const orderPurge = await Order.deleteMany({ _id: { $in: expiredOrders.map(o => o._id) } });
+        if (!orderPurge.acknowledged) {
+            return res.status(500).json({
+                message: 'Oops, failed to delete expired orders',
+                success: false
+            });
+        }
+
+        // After removing expired orders, delete their tickets
+        const ticketPurge = await Ticket.deleteMany({ _id: { $in: expiredOrderTicketIds } });
+        if (!ticketPurge.acknowledged) {
+            return res.status(500).json({
+                message: 'Oops, failed to delete tickets that belong to expired orders',
+                success: false,
+            });
+        }
+
         // Find all tickets that are reserved but not claimed
         // within the reservation time limit
         const reservationPeriod = config.cart.session.maxDuration;
