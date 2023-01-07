@@ -1,7 +1,7 @@
 {
     "cart": {
         "session": {
-            "maxDuration": 10000
+            "maxDuration": 300000
         }
     }
 }

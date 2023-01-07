@@ -1,6 +1,5 @@
 const Ticket = require('../../misc/database/ticket');
 const config = require('../../config.json');
-const ticket = require('../../misc/database/ticket');
 
 module.exports = async function (req, res, next) {
     try {
@@ -9,73 +8,43 @@ module.exports = async function (req, res, next) {
             return res.status(400).json({ message: 'Cart not initialized', success: false });
         }
 
-        // Using the ticket IDs in the cart, find the tickets in the database
-        const tickets = await Ticket.find({ _id: { $in: req.cart.tickets } })
-            .select('entranceType event status createdOn')
+        // ### Default cart logic ###
+        // Find all tickets in your cart that are reserved but not claimed
+        // within the reservation time limit
+        const reservationPeriod = config.cart.session.maxDuration;
+        const tickets = await Ticket.find({ _id: { $in: req.cart.tickets } });
+        const expiredTickets = tickets.filter(t => t.createdOn.getTime() + reservationPeriod < Date.now());
+
+        // If there are expired tickets, delete them
+        const expiredTicketIds = expiredTickets.map(t => t._id.toString());
+        const expiryPurge = await Ticket.deleteMany({ _id: { $in: expiredTicketIds } });
+        if (!expiryPurge.acknowledged) {
+            return res.status(500).json({ message: 'Failed to delete expired tickets', success: false });
+        }
+
+        // After removing expired tickets, remove them from the cart
+        req.cart.tickets = req.cart.tickets.filter(t => !expiredTicketIds.includes(t.toString()));
+        await req.cart.save();
+
+        // ### Custom cart logic ###
+        const ticketsWithMetadata = await Ticket.find({ _id: { $in: req.cart.tickets } })
+            .select('-_id -__v')
             .populate({
                 path: 'entranceType',
-                select: 'title price -_id'
+                select: '-_id -__v -event -capacity',
             })
             .populate({
                 path: 'event',
-                select: 'title description startDate endDate location -_id'
+                select: '-_id -__v -creator -createdOn -maxCapacity',
             });
-
-        // Find expired tickets in the database and remove them
-        const reserveDuration = config.cart.session.maxDuration
-        const expiredTickets = tickets.filter(ticket => {
-            const timeElapsed = new Date().getTime() - ticket.createdOn.getTime();
-            return timeElapsed > reserveDuration;
-        });
-        const expiredTicketIds = expiredTickets.map(ticket => ticket._id.toString());
-
-        // Delete the tickets from the database
-        const purgeExpiredTicketsQuery = await Ticket.deleteMany({ _id: { $in: expiredTicketIds } });
-        if (!purgeExpiredTicketsQuery.acknowledged) {
-            return res.status(500).json({ 
-                message: 'Could not delete tickets from database (unacknowledged)', 
-                success: false
-            });
-        } else if (purgeExpiredTicketsQuery.deletedCount !== expiredTickets.length) {
-            return res.status(500).json({ 
-                message: `Tried to delete ${expiredTicketIds.length} tickets, but removed ${purgeExpiredTicketsQuery.deletedCount}`, 
-                success: false 
-            });
-        }
-
-        // Remove expired tickets from the cart
-        req.cart.tickets = req.cart.tickets.filter(ticketId => {
-            ticketId = ticketId.toString();
-            return !expiredTicketIds.includes(ticketId)
-        });
-
-        // Remove tickets from cart if they are not in the database
-        const ticketIds = tickets.map(ticket => ticket._id.toString());
-        req.cart.tickets = req.cart.tickets.filter(ticketId => {
-            ticketId = ticketId.toString();
-            return ticketIds.includes(ticketId);
-        });
-
-        // Update cart timestamp
-        req.cart.updatedOn = new Date();
-
-        // Save cart to database
-        await req.cart.save();
-
-        // Create cart content object
-        const cartContent = {
-            unfilteredTickets: tickets,
-            tickets: req.cart.tickets.map(ticket => {
-                return tickets.find(t => t._id.toString() === ticket.toString());
-            }),
-            total: tickets.reduce((total, ticket) => total + ticket.entranceType.price.amount, 0)
-        }
 
         // Return the cart
         res.status(200).json({ 
-            message: "Updated your cart", 
-            success: true,
-            cart: cartContent
+            message: 'Cart retrieved successfully',
+            success: true, 
+            cart: {
+                tickets: ticketsWithMetadata
+            }
         });
     } catch (error) {
         res.status(500).json({ message: error.stack, success: false });

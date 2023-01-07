@@ -40,16 +40,15 @@ module.exports = async function (req, res, next) {
             });
         }
 
+        // ### Default cart logic ###
         // Find all tickets that are reserved but not claimed
         // within the reservation time limit
         const reservationPeriod = config.cart.session.maxDuration;
         const tickets = await Ticket.find({entranceType: req.body.entranceTypeId});
         const expiredTickets = tickets.filter(t => t.createdOn.getTime() + reservationPeriod < Date.now());
-        console.log(`Found ${expiredTickets.length} expired tickets (out of ${tickets.length} total)`)
 
         // If there are expired tickets, delete them
         const expiryPurge = await Ticket.deleteMany({ _id: { $in: expiredTickets.map(t => t._id) } });
-        console.log(`Deleted ${expiryPurge.deletedCount} expired tickets`);
         if (!expiryPurge.acknowledged) {
             return res.status(500).json({ 
                 message: 'Oops, failed to delete expired tickets', 
@@ -57,19 +56,18 @@ module.exports = async function (req, res, next) {
             });
         }
 
-        // Using the ticket IDs in the cart, make sure only the ticket IDs
-        // of existing tickets are kept
-        const cartTickets = await Ticket.find({ _id: { $in: req.cart.tickets } });
-        req.cart.tickets = cartTickets.map(t => t._id);
-        console.log(`${req.cart.tickets.length} tickets in cart`);
-        
+        // After removing expired tickets, remove them from the cart
+        req.cart.tickets = req.cart.tickets.filter(t => !expiredTickets.map(t => t._id.toString()).includes(t.toString()));
+        await req.cart.save();
+
+        // ### Add to cart logic ###
         // Make sure there is enough space to create the quantity of tickets requested
         const maxCapacity = entranceType.capacity;
         const unavailableSpace = tickets.length - expiredTickets.length;
         const availableSpace = maxCapacity - unavailableSpace;
         if (availableSpace < payload.quantity) {
             return res.status(400).json({
-                message: `There is not enough space for ${payload.quantity} tickets`,
+                message: `Not enough space to add your tickets. There are ${availableSpace} available`,
                 success: false
             });
         }
@@ -83,7 +81,6 @@ module.exports = async function (req, res, next) {
             }));
         }
         const createdTickets = await Ticket.insertMany(newTickets);
-        console.log(`Created ${createdTickets.length} tickets`);
 
         // Create a new array of ticket IDs
         const newTicketIds = createdTickets.map(t => t._id.toString());
