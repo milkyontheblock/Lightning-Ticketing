@@ -1,6 +1,7 @@
 const Ticket = require('../../misc/database/ticket')
 const config = require('../../config.json')
 const Order = require('../../misc/database/order')
+const { log } = require('../../misc/utility')
 
 module.exports = async function (req, res, next) {
     try {
@@ -41,6 +42,7 @@ module.exports = async function (req, res, next) {
                     success: false
                 });
             }
+            log(`Deleted ${orderPurge.deletedCount} expired orders`, 'CHECKOUT')
     
             // After removing expired orders, delete their tickets
             const ticketPurge = await Ticket.deleteMany({ _id: { $in: expiredOrderTicketIds } });
@@ -50,6 +52,7 @@ module.exports = async function (req, res, next) {
                     success: false,
                 });
             }
+            log(`Deleted ${ticketPurge.deletedCount} expired tickets`, 'CHECKOUT')
         }
 
         // Find all tickets in your cart that are reserved but not claimed
@@ -64,11 +67,13 @@ module.exports = async function (req, res, next) {
         if (!expiryPurge.acknowledged) {
             return res.status(500).json({ message: 'Failed to delete expired tickets', success: false });
         }
+        log(`Deleted ${expiryPurge.deletedCount} expired tickets`, 'CHECKOUT')
 
         // After removing expired tickets, remove them from the cart
         req.cart.tickets = req.cart.tickets.filter(t => !expiredTicketIds.includes(t.toString()));
         req.cart.updatedOn = Date.now();
         await req.cart.save();
+        log(`Updated cart with ${req.cart.tickets.length} tickets`, 'CHECKOUT')
 
         // ### Custom cart logic ###
         // Block the client from placing an order if there were expired tickets 
@@ -98,6 +103,7 @@ module.exports = async function (req, res, next) {
         if (!claimedTickets.acknowledged) {
             return res.status(500).json({ message: 'Failed to claim tickets', success: false });
         }
+        log(`Claimed ${claimedTickets.nModified} tickets`, 'CHECKOUT')
         
         // Calculate the total price of the order
         const currentCart = await Ticket.find({ _id: { $in: req.cart.tickets } }).populate({
@@ -116,6 +122,7 @@ module.exports = async function (req, res, next) {
             total: total
         });
         await order.save();
+        log(`Created order ${order._id}`, 'CHECKOUT')
 
         // Clear the cart
         req.cart.tickets = [];

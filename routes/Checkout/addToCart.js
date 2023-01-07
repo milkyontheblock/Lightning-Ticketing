@@ -101,6 +101,7 @@ module.exports = async function (req, res, next) {
         // Make sure there is enough space to create the quantity of tickets requested
         const maxCapacity = entranceType.capacity;
         const unavailableSpace = tickets.length - expiredTickets.length;
+        log(`Max capacity: ${maxCapacity}, Unavailable space: ${unavailableSpace}`, 'CHECKOUT')
         const availableSpace = maxCapacity - unavailableSpace;
         if (availableSpace < payload.quantity) {
             return res.status(400).json({
@@ -117,7 +118,7 @@ module.exports = async function (req, res, next) {
                 event: payload.eventId
             }));
         }
-        await Ticket.insertMany(newTickets);
+        const createdTickets = await Ticket.insertMany(newTickets);
         log(`Created ${newTickets.length} tickets`, 'CHECKOUT');
 
         // Create a new array of ticket IDs
