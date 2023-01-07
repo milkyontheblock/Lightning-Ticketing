@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const ticketSchema = new mongoose.Schema({
     status: {
         type: String,
-        enum: ['reserved', 'claimed', 'cancelled'],
+        enum: ['reserved', 'claimed', 'paid', 'cancelled'],
         default: 'reserved',
     },
     event: {

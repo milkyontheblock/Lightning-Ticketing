@@ -14,12 +14,10 @@ const orderSchema = new mongoose.Schema({
     firstName: {
         type: String,
         required: [true, 'First name is required'],
-        match: /^[a-zA-Z]+$/,
     },
     lastName: {
         type: String,
         required: [true, 'Last name is required'],
-        match: /^[a-zA-Z]+$/,
     },
     tickets: [{
         type: mongoose.Schema.Types.ObjectId,

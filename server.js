@@ -45,6 +45,7 @@ app.delete('/shop/v1/:shopId/event/:eventId', auth, require('./routes/Shop/remov
 app.post('/cart/v1', cart, require('./routes/Checkout/addToCart'));
 app.get('/cart/v1', cart, require('./routes/Checkout/getCart'));
 app.delete('/cart/v1', cart, require('./routes/Checkout/removeFromCart'));
+app.post('/order/v1', cart, require('./routes/Checkout/placeOrder'));
 
 // Routes
 app.listen(port, () => {

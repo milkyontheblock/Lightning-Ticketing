@@ -50,6 +50,7 @@ module.exports = async function (req, res, next) {
 
         // Remove the tickets from the cart
         req.cart.tickets = req.cart.tickets.filter(t => !ticketsToRemoveIds.includes(t.toString()));
+        req.cart.updatedOn = Date.now();
         await req.cart.save();
 
         // Delete the tickets from the database

@@ -24,9 +24,11 @@ module.exports = async function (req, res, next) {
 
         // After removing expired tickets, remove them from the cart
         req.cart.tickets = req.cart.tickets.filter(t => !expiredTicketIds.includes(t.toString()));
+        req.cart.updatedOn = Date.now();
         await req.cart.save();
 
         // ### Custom cart logic ###
+        // Create an array of tickets with metadata
         const ticketsWithMetadata = await Ticket.find({ _id: { $in: req.cart.tickets } })
             .select('-_id -__v')
             .populate({
