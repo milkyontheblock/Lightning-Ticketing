@@ -6,6 +6,48 @@ const config = require('../../config.json');
 const {log} = require('../../misc/utility');
 
 module.exports = async function (req, res, next) {
+    // Create a document object to store the created ticket IDs
+    const documents = {
+        createdTicketIds: null
+    }
+
+    // Revert the ticket creation if the add to cart process fails
+    async function revertTicketCreation() {
+        try {
+            if (documents.createdTicketIds) {
+                const deletedTickets = await Ticket.deleteMany({ _id: { $in: documents.createdTicketIds } });
+                if (!deletedTickets.acknowledged) {
+                    return false
+                }
+                log(`Deleted ${documents.createdTicketIds.length} tickets`, 'REVERT');
+                return true
+            } else {
+                return false
+            }
+        } catch(err) {
+            log(err.message, 'REVERT')
+            return false
+        }
+    }
+    
+    // Revert the cart addition if the add to cart process fails
+    async function revertCreatedTicketCartAddition() {
+        try {
+            if (documents.createdTicketIds) {
+                req.cart.tickets = req.cart.tickets.filter(t => !documents.createdTicketIds.map(t => t.toString()).includes(t.toString()));
+                req.cart.updatedOn = Date.now();
+                await req.cart.save();
+                log(`Updated cart after removing created tickets`, `REVERT`)
+                return true
+            } else {
+                return false
+            }
+        } catch(err) {
+            log(err.message, 'REVERT')
+            return false
+        }
+    }
+
     try {
         // Check if cart exists on the request body
         if (!req.cart) {
@@ -119,6 +161,7 @@ module.exports = async function (req, res, next) {
             }));
         }
         const createdTickets = await Ticket.insertMany(newTickets);
+        documents.createdTicketIds = createdTickets.map(t => t._id.toString());
         log(`Created ${newTickets.length} tickets`, 'CHECKOUT');
 
         // Create a new array of ticket IDs
@@ -163,5 +206,7 @@ module.exports = async function (req, res, next) {
         });
     } catch(err) {
         res.status(500).json({ message: err.message, success: false });
+        revertTicketCreation();
+        revertCreatedTicketCartAddition();
     }
 };

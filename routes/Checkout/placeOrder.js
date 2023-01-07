@@ -4,6 +4,61 @@ const Order = require('../../misc/database/order')
 const { log } = require('../../misc/utility')
 
 module.exports = async function (req, res, next) {
+    const documents = {
+        createdOrder: null,
+        designatedTickets: null
+    }
+
+    // Revert the order creation if the process fails
+    async function revertOrderCreation() {
+        try {
+            if (documents.createdOrder) {
+                const deletedOrder = await Order.deleteOne({ _id: documents.createdOrder._id });
+                if (!deletedOrder.acknowledged) {
+                    return false
+                }
+                log(`Deleted order ${documents.createdOrder._id}`, 'REVERT')
+                return true
+            } else {
+                log(`No order to revert`, 'REVERT')
+                return false
+            }
+        } catch(err) {
+            log(err.message, 'REVERT')
+            return false
+        }
+    }
+
+    // Set the tickets' status back to 'reserved'
+    // and add them back to the cart
+    async function revertTicketReservation() {
+        try {
+            if (documents.designatedTickets) {
+                const ticketIds = documents.designatedTickets;
+                const updatedTickets = await Ticket.updateMany({ _id: { $in: ticketIds } }, { $set: { status: 'reserved' } });
+                if (!updatedTickets.acknowledged) {
+                    return false
+                }
+                log(`Updated ${updatedTickets.modifiedCount} tickets' status back to 'reserved'`, 'REVERT')
+                for (const ticketId of ticketIds) {
+                    if (!req.cart.tickets.includes(ticketId)) {
+                        req.cart.tickets.push(ticketId);
+                    }
+                }
+                req.cart.updatedOn = Date.now();
+                await req.cart.save();
+                log(`Added ${updatedTickets.modifiedCount} tickets back to the cart`, 'REVERT')
+                return true
+            } else {
+                log(`No tickets to revert`, 'REVERT')
+                return false
+            }   
+        } catch(err) {
+            log(err.message, 'REVERT')
+            return false
+        }
+    }
+
     try {
         // Check if cart exists on the request body
         if (!req.cart) {
@@ -103,7 +158,8 @@ module.exports = async function (req, res, next) {
         if (!claimedTickets.acknowledged) {
             return res.status(500).json({ message: 'Failed to claim tickets', success: false });
         }
-        log(`Claimed ${claimedTickets.nModified} tickets`, 'CHECKOUT')
+        documents.designatedTickets = req.cart.tickets.map(t => t.toString());
+        log(`Claimed ${claimedTickets.modifiedCount} tickets`, 'CHECKOUT')
         
         // Calculate the total price of the order
         const currentCart = await Ticket.find({ _id: { $in: req.cart.tickets } }).populate({
@@ -121,6 +177,7 @@ module.exports = async function (req, res, next) {
             tickets: req.cart.tickets,
             total: total
         });
+        documents.createdOrder = order;
         await order.save();
         log(`Created order ${order._id}`, 'CHECKOUT')
 
@@ -137,6 +194,9 @@ module.exports = async function (req, res, next) {
             cart: req.cart,
         });
     } catch(err) {
+        console.log(documents)
         res.status(500).json({ message: err.stack, success: false });
+        revertOrderCreation();
+        revertTicketReservation();
     }
 }
