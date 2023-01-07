@@ -1,4 +1,5 @@
 const EntranceType = require('../../misc/database/entranceType');
+const Event = require('../../misc/database/event');
 const Ticket = require('../../misc/database/ticket');
 const config = require('../../config.json');
 
@@ -12,96 +13,90 @@ module.exports = async function (req, res, next) {
             });
         }
 
-        // Get the metadata from the request body
-        const addToCartMetaData = req.body
+        // Request body should contain the entrance type ID & event ID
+        const payload = req.body;
+        if (!payload.entranceTypeId || !payload.eventId) {
+            return res.status(400).json({
+                message: 'Please provide the entrance type ID and event ID',
+                success: false
+            });
+        }
 
-        // Remove tickets from cart if they are not in the database anymore
-        const cartTickets = await Ticket.find({ _id: { $in: req.cart.tickets } });
-        const cartTicketIds = cartTickets.map(ticket => ticket._id.toString());
-        req.cart.tickets = req.cart.tickets.filter(ticketId => {
-            ticketId = ticketId.toString();
-            return cartTicketIds.includes(ticketId);
-        });
-
-        // Get entrance type
-        const entranceType = await EntranceType.findById(addToCartMetaData.entranceTypeId).populate('event')
+        // Make sure the entrance type exists
+        const entranceType = await EntranceType.findById(payload.entranceTypeId).populate('event');
         if (!entranceType) {
-            return res.status(404).json({ 
-                message: 'Sorry, we could not find the entrance type you are looking for',
-                success: false 
+            return res.status(400).json({
+                message: 'The entrance type does not exist',
+                success: false
             });
         }
 
-        // Find all tickets 
-        const mintedTickets = await Ticket.find({ entranceType: entranceType._id });
+        // Make sure the event exists
+        const event = await Event.findById(payload.eventId);
+        if (!event) {
+            return res.status(400).json({
+                message: 'The event does not exist',
+                success: false
+            });
+        }
 
-        // Find all unclaimed tickets and delete them
-        const reserveDuration = config.cart.session.maxDuration;
-        const unclaimedTickets = mintedTickets.filter(ticket => ticket.createdOn.getTime() + reserveDuration < new Date().getTime());
-        await Ticket.deleteMany({ _id: { $in: unclaimedTickets.map(ticket => ticket._id) } });
+        // Find all tickets that are reserved but not claimed
+        // within the reservation time limit
+        const reservationPeriod = config.cart.session.maxDuration;
+        const tickets = await Ticket.find({entranceType: req.body.entranceTypeId});
+        const expiredTickets = tickets.filter(t => t.createdOn.getTime() + reservationPeriod < Date.now());
+        console.log(`Found ${expiredTickets.length} expired tickets (out of ${tickets.length} total)`)
 
-        // Make sure there are enough tickets left
+        // If there are expired tickets, delete them
+        const expiryPurge = await Ticket.deleteMany({ _id: { $in: expiredTickets.map(t => t._id) } });
+        console.log(`Deleted ${expiryPurge.deletedCount} expired tickets`);
+        if (!expiryPurge.acknowledged) {
+            return res.status(500).json({ 
+                message: 'Oops, failed to delete expired tickets', 
+                success: false
+            });
+        }
+
+        // Using the ticket IDs in the cart, make sure only the ticket IDs
+        // of existing tickets are kept
+        const cartTickets = await Ticket.find({ _id: { $in: req.cart.tickets } });
+        req.cart.tickets = cartTickets.map(t => t._id);
+        console.log(`${req.cart.tickets.length} tickets in cart`);
+        
+        // Make sure there is enough space to create the quantity of tickets requested
         const maxCapacity = entranceType.capacity;
-        if (mintedTickets.length >= maxCapacity) {  
-            return res.status(400).json({ 
-                message: 'Sorry, there are no tickets left for this entrance type', 
-                success: false 
+        const unavailableSpace = tickets.length - expiredTickets.length;
+        const availableSpace = maxCapacity - unavailableSpace;
+        if (availableSpace < payload.quantity) {
+            return res.status(400).json({
+                message: `There is not enough space for ${payload.quantity} tickets`,
+                success: false
             });
         }
-            
-        // Check if there is enough space to add the tickets to the cart
-        const ticketsLeft = maxCapacity - mintedTickets.length + unclaimedTickets.length;
-        if (ticketsLeft < addToCartMetaData.quantity) {
-            return res.status(400).json({ message: 'Not enough tickets left', success: false });
-        }
 
-        // Create tickets
-        const tickets = [];
-        for (let i = 0; i < addToCartMetaData.quantity; i++) {
-            tickets.push(new Ticket({
-                event: entranceType.event._id,
-                entranceType: entranceType._id,
+        // Create the tickets
+        const newTickets = [];
+        for (let i = 0; i < payload.quantity; i++) {
+            newTickets.push(new Ticket({
+                entranceType: payload.entranceTypeId,
+                event: payload.eventId
             }));
         }
+        const createdTickets = await Ticket.insertMany(newTickets);
+        console.log(`Created ${createdTickets.length} tickets`);
 
-        // Save tickets to database
-        const createTickets = await Ticket.insertMany(tickets);
-        const addedTickets = createTickets.map(addedTicket => {
-            return {
-                event: addedTicket.event,
-                entranceType: addedTicket.entranceType,
-            };
-        });
-
-        // Add tickets to cart
-        req.cart.tickets.push(...tickets.map(ticket => ticket._id));
-
-        // Save cart to database
+        // Create a new array of ticket IDs
+        const newTicketIds = createdTickets.map(t => t._id.toString());
+        
+        // Add the tickets to the cart
+        req.cart.tickets.push([...newTicketIds]);
         await req.cart.save();
 
-        // Create an array of tickets with the ticketId in the cart
-        const cartTicketsV2 = await Ticket.find({ _id: { $in: req.cart.tickets } })
-            .populate({
-                path: 'entranceType',
-                select: 'title price',
-            })
-            .populate({
-                path: 'event',
-                select: 'title',
-            });
-
-        // Return cart
+        // Return the cart
         res.status(200).json({
-            message: `Added ${addToCartMetaData.quantity} ticket(s) to cart`,
+            message: 'Successfully added to cart',
             success: true,
-            cart: {
-                id: req.cart._id,
-                currentCart: cartTicketsV2,
-                addedTickets: addedTickets,
-                unfilteredCart: req.cart.tickets,
-                total: req.cart.tickets.length,
-                expiresOn: new Date(reserveDuration + new Date().getTime()) 
-            }
+            cart: req.cart
         });
     } catch(err) {
         res.status(500).json({ message: err.message, success: false });
