@@ -79,7 +79,12 @@ module.exports = async function (req, res, next) {
             success: true,
             cart: {
                 id: req.cart._id,
-                tickets: ticketsWithMetadata,
+                tickets: ticketsWithMetadata.map(t => {
+                    // Calculate and add how long until a ticket expires
+                    t = t.toObject();
+                    t.expiresIn = reservationPeriod - (Date.now() - t.createdOn.getTime());
+                    return t;
+                }),
                 total: ticketsWithMetadata.reduce((acc, t) => acc + t.entranceType.price.amount, 0),
                 updatedOn: req.cart.updatedOn
             }
