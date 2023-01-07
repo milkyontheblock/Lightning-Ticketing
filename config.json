@@ -3,5 +3,10 @@
         "session": {
             "maxDuration": 300000
         }
+    },
+    "order": {
+        "session": {
+            "maxDuration": 300000
+        }
     }
 }
