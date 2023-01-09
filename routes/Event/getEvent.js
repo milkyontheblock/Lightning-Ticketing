@@ -20,7 +20,7 @@ module.exports = async function (req, res, next) {
         const entranceTypes = await EntranceType.find({event: event._id}).select('-event');
 
         // Add the entrance types to the event
-        event.entranceTypes = [];
+        event.entranceTypes = entranceTypes;
 
         // Return the event
         res.status(200).json({
