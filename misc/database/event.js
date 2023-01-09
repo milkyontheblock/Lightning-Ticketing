@@ -34,6 +34,20 @@ const eventSchema = new mongoose.Schema({
         type: Number,
         default: null,
     },
+    referralProgram: {
+        refundPercentage: {
+            type: Number,
+            default: 0,
+        },
+        requiredReferrals: {
+            type: Number,
+            default: 0,
+        },
+        maxClaimPeriod: {
+            type: Number,
+            default: 0,
+        }
+    },
     creator: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
