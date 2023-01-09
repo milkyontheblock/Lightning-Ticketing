@@ -66,24 +66,6 @@ module.exports = async function (req, res, next) {
             });
         }
 
-        // Make sure the entrance type exists
-        const entranceType = await EntranceType.findById(payload.entranceTypeId).populate('event');
-        if (!entranceType) {
-            return res.status(400).json({
-                message: 'The entrance type does not exist',
-                success: false
-            });
-        }
-
-        // Make sure the event exists
-        const event = await Event.findById(payload.eventId);
-        if (!event) {
-            return res.status(400).json({
-                message: 'The event does not exist',
-                success: false
-            });
-        }
-
         // ### Default cart logic ###
         // Find all orders that are pending and not paid within the payment time limit
         const paymentPeriod = config.order.session.maxDuration;
@@ -118,7 +100,7 @@ module.exports = async function (req, res, next) {
         // Find all tickets that are reserved but not claimed
         // within the reservation time limit
         const reservationPeriod = config.cart.session.maxDuration;
-        const tickets = await Ticket.find({entranceType: req.body.entranceTypeId});
+        const tickets = await Ticket.find({entranceType: req.body.entranceTypeId}).populate('entranceType');
         const expiredTickets = tickets.filter(t => t.createdOn.getTime() + reservationPeriod < Date.now());
 
         // If there are expired tickets, delete them
@@ -139,9 +121,30 @@ module.exports = async function (req, res, next) {
             log(`Updated cart after removing expired tickets`, `CHECKOUT`)
         }
 
+        async function getEntranceType(id) {
+            return EntranceType.findById(payload.entranceTypeId).populate('event');
+        }
+
         // ### Add to cart logic ###
         // Make sure there is enough space to create the quantity of tickets requested
-        const maxCapacity = entranceType.capacity;
+        // If there are no tickets in the cart, get the max capacity of the entrance type
+        // If there are tickets in the cart, get the max capacity of the entrance type (should be the same)
+        let maxCapacity
+        if (tickets.length === 0) {
+            const entranceType = await getEntranceType(payload.entranceTypeId)
+            if (!entranceType) {
+                return res.status(400).json({
+                    message: 'The entrance type does not exist',
+                    success: false
+                });
+            } else {
+                maxCapacity = entranceType.capacity
+                log(`Max capacity: ${maxCapacity} (used query)`, 'CHECKOUT'	)
+            }
+        } else {
+            maxCapacity = tickets[0].entranceType.capacity
+            log(`Max capacity: ${maxCapacity} (used ticket, no query)`, 'CHECKOUT'	)
+        }
         const unavailableSpace = tickets.length - expiredTickets.length;
         log(`Max capacity: ${maxCapacity}, Unavailable space: ${unavailableSpace}`, 'CHECKOUT')
         const availableSpace = maxCapacity - unavailableSpace;
