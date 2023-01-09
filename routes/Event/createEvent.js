@@ -22,6 +22,30 @@ module.exports = async function (req, res, next) {
             });
         }
 
+        // Handle the referral program
+        const referralProgram = eventData.referralProgram;
+        if (referralProgram) {
+            // Check if the referral program is valid
+            if (referralProgram.refundPercentage < 0 || referralProgram.refundPercentage > 100) {
+                return res.status(400).json({
+                    message: 'Refund percentage must be between 0 and 100',
+                    success: false
+                });
+            }
+            if (referralProgram.requiredReferrals < 0) {
+                return res.status(400).json({
+                    message: 'Required referrals must be a positive number',
+                    success: false
+                });
+            }
+            if (referralProgram.maxClaimPeriod < 0) {
+                return res.status(400).json({
+                    message: 'Max claim period must be a positive number',
+                    success: false
+                });
+            }
+        }
+
         // Create a new event object
         const event = new Event({
             title: eventData.title,
@@ -29,6 +53,7 @@ module.exports = async function (req, res, next) {
             location: eventData.location,
             startDate: eventData.startDate,
             maxCapacity: eventData.maxCapacity,
+            referralProgram: eventData.referralProgram,
             creator: req.user._id,
             entranceTypes: eventData.entranceTypes
         });

@@ -33,10 +33,21 @@ module.exports = async function (req, res, next) {
         }
 
         // Update the event
-        event.title = eventData.title;
-        event.description = eventData.description;
-        event.location = eventData.location;
-        event.startDate = eventData.startDate;
+        if (eventData.title) event.title = eventData.title;
+        if (eventData.description) event.description = eventData.description;
+        if (eventData.location) event.location = eventData.location;
+        if (eventData.startDate) event.startDate = eventData.startDate;
+        if (eventData.referralProgram) {
+            if (eventData.referralProgram.refundPercentage) {
+                event.referralProgram.refundPercentage = eventData.referralProgram.refundPercentage;
+            }
+            if (eventData.referralProgram.requiredReferrals) {
+                event.referralProgram.requiredReferrals = eventData.referralProgram.requiredReferrals;
+            }
+            if (eventData.referralProgram.maxClaimPeriod) {
+                event.referralProgram.maxClaimPeriod = eventData.referralProgram.maxClaimPeriod;
+            }
+        }
         
         // Store the event in the database
         await event.save();
