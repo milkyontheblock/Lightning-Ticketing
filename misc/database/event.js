@@ -5,13 +5,13 @@ const mongoose = require('mongoose');
 const eventSchema = new mongoose.Schema({
     title: {
         type: String,
-        minlength: 1,
+        minlength: 3,
         maxlength: 100,
         required: [true, 'Event title is required'],
     },
     description: {
         type: String,
-        minlength: 1,
+        minlength: 0,
         maxlength: 1000,
         default: null,
     },
